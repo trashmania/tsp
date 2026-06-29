@@ -260,7 +260,7 @@ func (m model) View() string {
 	s += fmt.Sprintf("│  Потребление:  %-6.2fW             │\n", m.watts)
 	s += fmt.Sprintf("│  Температура:  %-6.1f°C            │\n", m.temp)
 	s += fmt.Sprintf("│  Частота ЦП:   %-6.2fGHz           │\n", m.ghz)
-	s += fmt.Sprintf("│  Загрузка ЦП:  %-6.1f%%            │\n", m.cpuPercent)
+	s += fmt.Sprintf("│  Загрузка ЦП:  %-6.1f%%             │\n", m.cpuPercent)
 	s += "├────────────────────────────────────┤\n\n"
 
 	sysProfileStr := m.profiles[m.systemProfile]
