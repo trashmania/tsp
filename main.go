@@ -71,7 +71,7 @@ func getCPUBoost() (bool, error) {
 		}
 		return strings.TrimSpace(string(data)) == "1", nil
 	default:
-		return false, fmt.Errorf("не удалось определить драйвер cpufreq")
+		return false, fmt.Errorf("Failed to detect cpufreq Driver")
 	}
 }
 
@@ -126,7 +126,7 @@ func setCPUBoost(enable bool) error {
 			val = "1"
 		}
 	default:
-		return fmt.Errorf("турбо буст не поддерживается процессором")
+		return fmt.Errorf("Turbo Boost is not supported by your processor")
 	}
 	return writeWithPrivilege(path, val)
 }
@@ -151,7 +151,7 @@ func applyTLPProfile(profile string) tea.Cmd {
 		case "ac":
 			tlpArg = "ac"
 		default:
-			errMsg := fmt.Sprintf("Неизвестный профиль: %s", profile)
+			errMsg := fmt.Sprintf("Unknown Processor: %s", profile)
 			return statusMsg(errMsg)
 		}
 
@@ -160,7 +160,7 @@ func applyTLPProfile(profile string) tea.Cmd {
 			errMsg := fmt.Sprintf("Ошибка TLP (%s): %v", profile, err)
 			return statusMsg(errMsg)
 		}
-		okMsg := fmt.Sprintf("Применён профиль: %s", profile)
+		okMsg := fmt.Sprintf("Applied profile: %s", profile)
 		return statusMsg(okMsg)
 	}
 }
@@ -176,10 +176,10 @@ func runPowertop() tea.Cmd {
 		cmd := exec.Command("doas", "powertop", "--auto-tune")
 		err := cmd.Run()
 		if err != nil {
-			errMsg := fmt.Sprintf("Ошибка Powertop: %v", err)
+			errMsg := fmt.Sprintf("Powertop error: %v", err)
 			return statusMsg(errMsg)
 		}
-		return statusMsg("Энергопотребление оптимизировано")
+		return statusMsg("Power usage optimized")
 	}
 }
 
@@ -197,14 +197,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case boostMsg:
 		if msg.err != nil {
-			m.status = fmt.Sprintf("Ошибка Турбо буста: %v", msg.err)
+			m.status = fmt.Sprintf("Turbo Boost error: %v", msg.err)
 		} else {
 			m.cpuBoost = msg.newState
-			state := "Выкл"
+			state := "Off"
 			if msg.newState {
-				state = "Вкл"
+				state = "On"
 			}
-			m.status = "Турбо буст: " + state
+			m.status = "Turbo Boost: " + state
 		}
 		return m, nil
 
@@ -235,16 +235,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if !m.profilesExpanded {
 					m.systemProfile = m.currentProfile
 					selectedProfile := m.profiles[m.currentProfile]
-					m.status = fmt.Sprintf("Применение %s...", selectedProfile)
+					m.status = fmt.Sprintf("Applying %s...", selectedProfile)
 					return m, applyTLPProfile(selectedProfile)
 				} else {
-					m.status = "Выберите профиль"
+					m.status = "Select profile"
 				}
 			case 1:
-				m.status = "Переключение Турбо буста..."
+				m.status = "Switching Turbo Boost..."
 				return m, toggleBoost(!m.cpuBoost)
 			case 2:
-				m.status = "Оптимизация..."
+				m.status = "Optimizing..."
 				return m, runPowertop()
 			case 3:
 				return m, tea.Quit
@@ -257,22 +257,22 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) View() string {
 	var s string
 	s += "╭──[ TSP • ThinkPad Sigmo's Power ]──╮\n"
-	s += fmt.Sprintf("│  Потребление:  %-6.2fW             │\n", m.watts)
-	s += fmt.Sprintf("│  Температура:  %-6.1f°C            │\n", m.temp)
-	s += fmt.Sprintf("│  Частота ЦП:   %-6.2fGHz           │\n", m.ghz)
-	s += fmt.Sprintf("│  Загрузка ЦП:  %-6.1f%%            │\n", m.cpuPercent)
-	s += "├────────────────────────────────────┤\n\n"
+	s += fmt.Sprintf("│  Usage:  %-6.2fW                   │\n", m.watts)
+	s += fmt.Sprintf("│  Temperature:  %-6.1f°C            │\n", m.temp)
+	s += fmt.Sprintf("│  CPU freq:   %-6.2fGHz             │\n", m.ghz)
+	s += fmt.Sprintf("│  CPU load:  %-6.1f%%                │\n", m.cpuPercent)
+	s += "├────────────────────────────────────┤\n\n" 
 
 	sysProfileStr := m.profiles[m.systemProfile]
 
 	if m.activeRow == 0 {
 		if m.profilesExpanded {
-			s += "   Профили питания (показать/скрыть) <---\n"
+			s += "   Power profiles (Show/Hide) <---\n"
 		} else {
-			s += fmt.Sprintf("   Профили питания [%s] <---\n", sysProfileStr)
+			s += fmt.Sprintf("   Power profiles [%s] <---\n", sysProfileStr)
 		}
 	} else {
-		s += fmt.Sprintf(" Профили питания [%s]\n", sysProfileStr)
+		s += fmt.Sprintf(" Power profiles [%s]\n", sysProfileStr)
 	}
 
 	if m.profilesExpanded {
@@ -292,33 +292,33 @@ func (m model) View() string {
 		s += "\n"
 	}
 
-	boostState := "Выкл"
+	boostState := "Off"
 	if m.cpuBoost {
-		boostState = "Вкл"
+		boostState = "On"
 	}
 
 	if m.activeRow == 1 {
-		s += fmt.Sprintf("   Турбо буст: %s <---\n", boostState)
+		s += fmt.Sprintf("   Turbo Boost: %s <---\n", boostState)
 	} else {
-		s += fmt.Sprintf(" Турбо буст: %s\n", boostState)
+		s += fmt.Sprintf(" Turbo Boost: %s\n", boostState)
 	}
 
 	if m.activeRow == 2 {
-		s += "   Автонастройка Powertop <---\n"
+		s += "   Autoconfigure Powertop <---\n"
 	} else {
-		s += " Автонастройка Powertop\n"
+		s += " Autoconfigure Powertop\n"
 	}
 	s += "\n├────────────────────────────────────┤\n"
 	if m.activeRow == 3 {
-		s += "   Выход <---\n"
+		s += "   Exit <---\n"
 	} else {
-		s += " Выход\n"
+		s += " Exit\n"
 	}
 	s += "╰────────────────────────────────────╯\n"
 	if m.status != "" {
-		s += fmt.Sprintf("\n Действие: %s\n", m.status)
+		s += fmt.Sprintf("\n Action: %s\n", m.status)
 	} else {
-		s += "\n Управление: Выбор — Enter, Навигация — Стрелки\n"
+		s += "\n Controls: Select — Enter, Navigation — Arrows\n"
 	}
 	return s
 }
@@ -381,7 +381,7 @@ func main() {
 
 	p := tea.NewProgram(initalModel, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
-		fmt.Printf("Ошибка запуска: %v\n", err)
+		fmt.Printf("Startup Error: %v\n", err)
 		os.Exit(1)
 	}
 }
